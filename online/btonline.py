@@ -4,16 +4,17 @@ import sys
 from select import select
 import time
 from datetime import datetime
-from StringIO import StringIO
-import BaseHTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+# from StringIO import StringIO
+import io
+import http.server
+# from SimpleHTTPServer import SimpleHTTPRequestHandler
 import collections
 
 NUM_PRBS_PER_TTI = 50
 NUM_PRBS_START = 0.9*NUM_PRBS_PER_TTI
 NUM_PRBS_END = 0.4*NUM_PRBS_PER_TTI
 
-class MyHandler(SimpleHTTPRequestHandler):
+class MyHandler(http.server.SimpleHTTPRequestHandler):
   def send_head(self):
     if self.translate_path(self.path).endswith('/bw'):
       body = "%0.3f" % bsegg
@@ -22,7 +23,7 @@ class MyHandler(SimpleHTTPRequestHandler):
       self.send_header("Content-Length", str(len(body)))
       self.send_header("Access-Control-Allow-Origin", "*")
       self.end_headers()
-      return StringIO(body)
+      return io.StringIO(body)
     else:
       return super(MyHandler, self).send_head()
 
@@ -46,7 +47,7 @@ class PDSCHLog():
       self.time = -1
 
   def print_contents(self):
-    print "fsf %d, num PRBs = %d, DL vol = %0.2f Bytes\n" % (self.fsf, self.nRBs, self.vol_dl)
+    print("fsf %d, num PRBs = %d, DL vol = %0.2f Bytes\n" % (self.fsf, self.nRBs, self.vol_dl))
 
 class BurstTracker():
   def __init__(self):
@@ -86,7 +87,7 @@ class BurstTracker():
 
 def setup_http_server():
   HandlerClass = MyHandler
-  ServerClass  = BaseHTTPServer.HTTPServer
+  ServerClass  = http.server.HTTPServer
   Protocol     = "HTTP/1.0"
 
   port = 8000
@@ -113,7 +114,7 @@ def main():
   # Setup HTTP server
   httpd = setup_http_server()
 
-  print "Starting BurstTracker..."
+  print ("Starting BurstTracker...")
  
   while True:
     ready = select([sys.stdin, httpd], [], [], 0.1)[0]
@@ -139,9 +140,9 @@ def main():
             burst_hist.append(bthp)
             dur_hist.append(bt.tdelta)
             bsegg = sum([dur_hist[i] * burst_hist[i] for i in range(len(burst_hist))]) / sum(dur_hist)
-            print "%0.3f BURST from (%d, %d) with throughput %0.3f Mbps (avg %0.3f)" % (plog_prev.time, bt.start_fsf, bt.end_fsf, bthp/1e6, bsegg/1e6)
+            print ("%0.3f BURST from (%d, %d) with throughput %0.3f Mbps (avg %0.3f)" % (plog_prev.time, bt.start_fsf, bt.end_fsf, bthp/1e6, bsegg/1e6))
             bt.clear_burst()
-          if not bt.in_burst and plog_curr.nRBs > NUM_PRBS_START 
+          if not bt.in_burst and plog_curr.nRBs > NUM_PRBS_START:
             # BEGIN burst if: TTI satisfies start threshold
             bt.begin_burst(plog_curr.fsf)
           if bt.in_burst:
@@ -151,7 +152,7 @@ def main():
           ### save previous state ###
           plog_prev = plog_curr
         elif not len(line):
-          print "detected EOF"
+          print ("detected EOF")
           exit()
       elif file == httpd:
         httpd.handle_request()
