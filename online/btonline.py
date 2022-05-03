@@ -94,7 +94,6 @@ def setup_http_server():
     HandlerClass = MyHandler
     ServerClass = http.server.HTTPServer
     Protocol = "HTTP/1.0"
-<<<<<<< HEAD
 
     port = 8000
     server_address = ('127.0.0.1', port)
@@ -102,17 +101,7 @@ def setup_http_server():
     HandlerClass.protocol_version = Protocol
     httpd = ServerClass(server_address, HandlerClass)
 
-=======
 
-    port = 8000
-    server_address = ('127.0.0.1', port)
-
-    HandlerClass.protocol_version = Protocol
-    httpd = ServerClass(server_address, HandlerClass)
-
->>>>>>> a5902e67b280b25e22a082d3d20de664097df801
-    httpd.timeout = 0.1
-    return httpd
 
 
 def serve_bandwidth(httpd):
@@ -129,17 +118,13 @@ def main():
     dur_hist = collections.deque(maxlen=5)
 
     # Setup HTTP server
-<<<<<<< HEAD
     # httpd = setup_http_server()
-=======
-    httpd = setup_http_server()
->>>>>>> a5902e67b280b25e22a082d3d20de664097df801
 
     print("Starting BurstTracker...")
 
     # while True:
     #   ready = select([sys.stdin, httpd], [], [], 0.1)[0]
-<<<<<<< HEAD
+
     ready = open("./online/test.txt",'r')
     # for file in ready:
     #     if file == sys.stdin:
@@ -181,47 +166,6 @@ def main():
           exit()
   # elif file == httpd:
   #     httpd.handle_request()
-=======
-    ready = "filename"
-    for file in ready:
-        if file == sys.stdin:
-            line = sys.stdin.readline()
-            if line and "Subframe" in line:
-
-                ### parse current PDSCH log ###
-                plog_curr = PDSCHLog(line[45:])  # trim out "[INFO] [MsgLogger]: " suffix
-
-                ### account for SFN roll over ###
-                if plog_curr.fsf < plog_prev.fsf:
-                    tdelta = 10249 - plog_prev.fsf + plog_curr.fsf
-                else:
-                    tdelta = plog_curr.fsf - plog_prev.fsf
-
-                ### burst IN/OUT logic ###
-                if bt.in_burst and plog_prev.nRBs < NUM_PRBS_END and tdelta > 1:
-                    # END burst if: (1) prev TTI satisfies end threshold, (2) next TTI is empty
-                    bthp = bt.end_burst(plog_prev.fsf)
-                    burst_hist.append(bthp)
-                    dur_hist.append(bt.tdelta)
-                    bsegg = sum([dur_hist[i] * burst_hist[i] for i in range(len(burst_hist))]) / sum(dur_hist)
-                    print("%0.3f BURST from (%d, %d) with throughput %0.3f Mbps (avg %0.3f)" % (
-                    plog_prev.time, bt.start_fsf, bt.end_fsf, bthp / 1e6, bsegg / 1e6))
-                    bt.clear_burst()
-                if not bt.in_burst and plog_curr.nRBs > NUM_PRBS_START:
-                    # BEGIN burst if: TTI satisfies start threshold
-                    bt.begin_burst(plog_curr.fsf)
-                if bt.in_burst:
-                    # account for volume from every TTI during burst
-                    bt.add_volume(plog_curr.vol_dl)
-
-                ### save previous state ###
-                plog_prev = plog_curr
-            elif not len(line):
-                print("detected EOF")
-                exit()
-        elif file == httpd:
-            httpd.handle_request()
->>>>>>> a5902e67b280b25e22a082d3d20de664097df801
 
 
 if __name__ == "__main__":
